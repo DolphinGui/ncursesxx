@@ -1,8 +1,10 @@
 #pragma once
 
 #include <ncurses.h>
+#include <ostream>
 
-#include "enums.hpp"
+#include "data.hpp"
+#include "iocurse.hpp"
 
 namespace ncxx {
 
@@ -12,6 +14,7 @@ namespace ncxx {
  global state library*/
 class terminal {
   terminal(initOptions, int);
+  ~terminal();
 
 public:
   static terminal &get(initOptions options, int halfdelay) {
@@ -19,5 +22,6 @@ public:
     return itself;
   }
   static terminal &get() { return get(initOptions::NOTHING, 0); }
+  window scr;
 };
 } // namespace ncxx
