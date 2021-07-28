@@ -5,10 +5,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug",
-      "type": "lldb-mi",
+      "type": "gdb",
       "request": "launch",
-      "target": ".${workspaceRoot}/build/test1",
+      "terminal": "",
+      "name": "launch",
+      "target": "./test1",
       "cwd": "${workspaceRoot}/build",
       "valuesFormatting": "parseText"
     }

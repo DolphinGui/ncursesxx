@@ -2,7 +2,8 @@
 
 using namespace ncxx;
 
-terminal::terminal(initOptions options, int delay): scr(stdscr) {
+namespace {
+WINDOW *initcurses(initOptions options, int delay) {
   initscr(); /* Start curses mode 		*/
   if ((options & initOptions::RAW) != initOptions::NOTHING)
     raw(); /* Line buffering disabled	*/
@@ -12,6 +13,11 @@ terminal::terminal(initOptions options, int delay): scr(stdscr) {
     noecho();
   if (delay)
     halfdelay(delay);
+  return stdscr;
 }
+} // namespace
+
+terminal::terminal(initOptions options, int delay)
+    : scr(initcurses(options, delay)) {}
 
 terminal::~terminal() { endwin(); }

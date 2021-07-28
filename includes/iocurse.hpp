@@ -1,14 +1,9 @@
 #pragma once
 
-#include <exception>
-#include <ios>
 #include <iostream>
-#include <istream>
-#include <ncurses.h>
-#include <ostream>
-#include <stdexcept>
 #include <streambuf>
-#include <string>
+
+#include <ncurses.h>
 
 #include "data.hpp"
 
@@ -28,8 +23,7 @@ protected:
   // not sure if the error codes even match up
   inline int sync() noexcept override { return wrefresh(internal); }
 
-  inline std::streamsize xsputn(const wchar_t *s,
-                                std::streamsize n) noexcept override {
+  inline std::streamsize xsputn(const wchar_t *s, std::streamsize n) override {
     auto result = waddnwstr(internal, s, n);
     if (result != OK)
       return -1;
@@ -43,12 +37,18 @@ protected:
   }
 
   uint underflow() override {
+    static_assert(sizeof(wchar_t) <= sizeof(uint),
+                  "uint cannot contain wchar_t");
     wchar_t ch = wgetch(internal);
     return ch;
   }
 
-  std::streamsize xsgetn(wchar_t *s,
-                          std::streamsize count) override {
+  uint uflow() override {
+    wchar_t ch = wgetch(internal);
+    return ch;
+  }
+
+  std::streamsize xsgetn(wchar_t *s, std::streamsize count) override {
     int successful{};
     for (int i = 0; i < count; i++) {
       auto result = wgetch(internal);
