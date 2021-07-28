@@ -4,6 +4,7 @@
 #include <streambuf>
 
 #include <ncurses.h>
+#include <string>
 
 #include "data.hpp"
 
@@ -23,32 +24,32 @@ protected:
   // not sure if the error codes even match up
   inline int sync() noexcept override { return wrefresh(internal); }
 
-  inline std::streamsize xsputn(const wchar_t *s, std::streamsize n) override {
+  inline std::streamsize xsputn(const wchar_t *s,
+                                std::streamsize n) noexcept override {
     auto result = waddnwstr(internal, s, n);
     if (result != OK)
       return -1;
     return n;
   }
-  inline uint overflow(uint c) override {
+  inline uint overflow(uint c) noexcept override {
     auto result = waddch(internal, c);
     if (result != OK)
       return EOF;
     return 0;
   }
 
-  uint underflow() override {
+  inline uint underflow() noexcept override {
     static_assert(sizeof(wchar_t) <= sizeof(uint),
                   "uint cannot contain wchar_t");
-    wchar_t ch = wgetch(internal);
-    return ch;
+    return prev;
   }
 
-  uint uflow() override {
-    wchar_t ch = wgetch(internal);
-    return ch;
+  inline uint uflow() noexcept override {
+    prev = wgetch(internal);
+    return prev;
   }
 
-  std::streamsize xsgetn(wchar_t *s, std::streamsize count) override {
+  std::streamsize xsgetn(wchar_t *s, std::streamsize count) noexcept override {
     int successful{};
     for (int i = 0; i < count; i++) {
       auto result = wgetch(internal);
@@ -63,5 +64,6 @@ protected:
 
 private:
   WINDOW *internal;
+  wchar_t prev{};
 };
 } // namespace ncxx
