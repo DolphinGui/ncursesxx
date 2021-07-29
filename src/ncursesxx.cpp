@@ -10,6 +10,7 @@ using namespace ncxx;
 #endif
 namespace {
 WINDOW *initcurses(initOptions options, int delay) EXCEPT {
+  auto local = setlocale(LC_CTYPE, "");
   initscr(); /* Start curses mode 		*/
   if ((options & initOptions::RAW) != initOptions::NOTHING)
     raw(); /* Line buffering disabled	*/

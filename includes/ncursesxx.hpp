@@ -25,6 +25,6 @@ public:
     return itself;
   }
   static terminal &get() { return init(initOptions::NOTHING, 0); }
-  window<NCXX_CHARTYPE> scr;
+  window<> scr;
 };
 } // namespace ncxx

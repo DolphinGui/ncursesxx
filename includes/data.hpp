@@ -16,6 +16,20 @@ enum struct initOptions : uint32_t {
   KEYPAD = 1 << 2
 };
 MTX_BITFLAG_OPS_MACRO(initOptions, uint32_t);
+enum charAttributes : chtype {
+  normal = A_NORMAL,
+  standout = A_STANDOUT,
+  underline = A_UNDERLINE,
+  reverse = A_REVERSE,
+  blink = A_BLINK,
+  dim = A_DIM,
+  bold = A_BOLD,
+  protect = A_PROTECT,
+  invis = A_INVIS,
+  alt = A_ALTCHARSET,
+  extract = A_CHARTEXT
+};
+MTX_BITFLAG_OPS_MACRO(charAttributes, chtype)
 enum struct colors {
   BLACK = COLOR_BLACK,
   RED = COLOR_RED,
@@ -26,18 +40,23 @@ enum struct colors {
   MAGENTA = COLOR_MAGENTA,
   WHITE = COLOR_WHITE
 };
+
 using color = colors;
 class color_pair {
   static int counter;
   int identity;
   using fore = color;
   using back = color;
+  template<typename charType>
+  friend class window;
+  color_pair(int identity) : identity(identity){};
 
 public:
   color_pair(color fore, color back) : identity(counter) {
     if (COLOR_PAIRS <= counter)
       throw std::logic_error("too many color pairs constructed.");
-    auto result = init_pair(counter, static_cast<short>(fore), static_cast<short>(back));
+    auto result =
+        init_pair(counter, static_cast<short>(fore), static_cast<short>(back));
     counter++;
   }
   color_pair(const color_pair &) = default;
@@ -49,8 +68,16 @@ public:
     return {fore, back};
   }
   int _getIdentity() { return identity; }
+  operator charAttributes() {
+    return static_cast<charAttributes>(COLOR_PAIR(identity));
+  }
 };
 inline int color_pair::counter = 1;
+struct attributeOut {
+  color_pair p;
+  charAttributes c;
+};
+
 /*
 enum struct mouseInfo : mmask_t {
   RELEASE1 = BUTTON1_RELEASED,
