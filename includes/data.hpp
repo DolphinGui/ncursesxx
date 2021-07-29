@@ -1,7 +1,11 @@
 #pragma once
 
 #include <cstdint>
-#include <ios>
+#include <ncurses.h>
+#include <stdexcept>
+#include <utility>
+
+#include "macros.hpp"
 
 namespace ncxx {
 
@@ -11,46 +15,73 @@ enum struct initOptions : uint32_t {
   NOECHO = 1 << 1,
   KEYPAD = 1 << 2
 };
+MTX_BITFLAG_OPS_MACRO(initOptions, uint32_t);
+enum struct colors {
+  BLACK = COLOR_BLACK,
+  RED = COLOR_RED,
+  GREEN = COLOR_GREEN,
+  YELLOW = COLOR_YELLOW,
+  BLUE = COLOR_BLUE,
+  CYAN = COLOR_CYAN,
+  MAGENTA = COLOR_MAGENTA,
+  WHITE = COLOR_WHITE
+};
+using color = colors;
+class color_pair {
+  static int counter;
+  int identity;
+  using fore = color;
+  using back = color;
 
-constexpr inline initOptions operator&(initOptions left,
-                                       initOptions right) noexcept {
-  return static_cast<initOptions>(static_cast<uint32_t>(left) &
-                                  static_cast<uint32_t>(right));
-}
-constexpr inline initOptions operator|(initOptions left,
-                                       initOptions right) noexcept {
-  return static_cast<initOptions>(static_cast<uint32_t>(left) |
-                                  static_cast<uint32_t>(right));
-}
-
-constexpr inline initOptions operator^(initOptions left,
-                                       initOptions right) noexcept {
-  return static_cast<initOptions>(static_cast<uint32_t>(left) ^
-                                  static_cast<uint32_t>(right));
-}
-
-constexpr inline initOptions operator~(initOptions right) noexcept {
-  return static_cast<initOptions>(~static_cast<uint32_t>(right));
-}
-
-inline initOptions &operator|=(initOptions &a, initOptions b) {
-  return reinterpret_cast<initOptions &>(reinterpret_cast<uint32_t &>(a) |=
-                                         static_cast<uint32_t>(b));
-}
-
-inline initOptions &operator^=(initOptions &a, initOptions b) {
-  return reinterpret_cast<initOptions &>(reinterpret_cast<uint32_t &>(a) ^=
-                                         static_cast<uint32_t>(b));
-}
-
-inline initOptions &operator&=(initOptions &a, initOptions b) {
-  return reinterpret_cast<initOptions &>(reinterpret_cast<uint32_t &>(a) &=
-                                         static_cast<uint32_t>(b));
-}
+public:
+  color_pair(color fore, color back) : identity(counter) {
+    if (COLOR_PAIRS <= counter)
+      throw std::logic_error("too many color pairs constructed.");
+    init_pair(counter, static_cast<short>(fore), static_cast<short>(back));
+    counter++;
+  }
+  color_pair(const color_pair &) = default;
+  ~color_pair() { counter--; }
+  std::pair<fore, back> content() {
+    color fore, back;
+    pair_content(identity, reinterpret_cast<short *>(&fore),
+                 reinterpret_cast<short *>(&back));
+    return {fore, back};
+  }
+  int _getIdentity() { return identity; }
+};
+inline int color_pair::counter = 1;
+/*
+enum struct mouseInfo : mmask_t {
+  RELEASE1 = BUTTON1_RELEASED,
+  PRESS1 = BUTTON1_PRESSED,
+  CLICK1 = BUTTON1_CLICKED,
+  DOUBLE_CLICK1 = BUTTON1_DOUBLE_CLICKED,
+  TRIPLE_CLICK1 = BUTTON1_TRIPLE_CLICKED,
+  RELEASE2 = BUTTON2_RELEASED,
+  PRESS2 = BUTTON2_PRESSED,
+  CLICK2 = BUTTON2_CLICKED,
+  DOUBLE_CLICK2 = BUTTON2_DOUBLE_CLICKED,
+  TRIPLE_CLICK2 = BUTTON2_TRIPLE_CLICKED,
+  RELEASE3 = BUTTON3_RELEASED,
+  PRESS3 = BUTTON3_PRESSED,
+  CLICK3 = BUTTON3_CLICKED,
+  DOUBLE_CLICK3 = BUTTON3_DOUBLE_CLICKED,
+  TRIPLE_CLICK3 = BUTTON3_TRIPLE_CLICKED,
+  RELEASE4 = BUTTON4_RELEASED,
+  PRESS4 = BUTTON4_PRESSED,
+  CLICK4 = BUTTON4_CLICKED,
+  DOUBLE_CLICK4 = BUTTON4_DOUBLE_CLICKED,
+  TRIPLE_CLICK4 = BUTTON4_TRIPLE_CLICKED,
+  SHIFT = BUTTON_SHIFT,
+  CTRL = BUTTON_CTRL,
+  ALT = BUTTON_ALT,
+  ALL = ALL_MOUSE_EVENTS,
+  POSITION = REPORT_MOUSE_POSITION
+};*/
 
 struct coordinate {
   long x, y;
-  std::streamoff a;
   constexpr inline bool operator==(coordinate other) const noexcept {
     return x == other.x && y == other.y;
   }
