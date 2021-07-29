@@ -36,7 +36,7 @@ public:
   }
 
   friend inline window &operator<<(window &stream, _set s) NCXX_EXCEPT {
-    auto result = wattron(stream.internal, s.p._getIdentity());
+    auto result = wattron(stream.internal, COLOR_PAIR(s.p._getIdentity()));
 #ifndef NCXX_NO_EXCEPTIONS
     if (result != OK)
       throw std::runtime_error("attron color has failed");
@@ -45,7 +45,7 @@ public:
   }
 
   friend inline window &operator<<(window &stream, _unset s) NCXX_EXCEPT {
-    auto result = wattroff(stream.internal, s.p._getIdentity());
+    auto result = wattroff(stream.internal, COLOR_PAIR(s.p._getIdentity()));
 #ifndef NCXX_NO_EXCEPTIONS
     if (result != OK)
       throw std::runtime_error("attron color has failed");

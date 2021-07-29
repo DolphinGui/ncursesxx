@@ -37,7 +37,7 @@ public:
   color_pair(color fore, color back) : identity(counter) {
     if (COLOR_PAIRS <= counter)
       throw std::logic_error("too many color pairs constructed.");
-    init_pair(counter, static_cast<short>(fore), static_cast<short>(back));
+    auto result = init_pair(counter, static_cast<short>(fore), static_cast<short>(back));
     counter++;
   }
   color_pair(const color_pair &) = default;
