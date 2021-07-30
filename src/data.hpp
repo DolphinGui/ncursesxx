@@ -1,21 +1,49 @@
+/** @file data.hpp
+ *  @brief the data header
+ *
+ *  It defines enums and structs.
+ *
+ *  @author Shin.
+ */
+
 #pragma once
 
 #include <cstdint>
 #include <ncurses.h>
 #include <stdexcept>
-#include <utility>
 
 #include "macros.hpp"
 
 namespace ncxx {
-
+/**
+ *  @brief the initoptions bitflag enum
+ *  enabling a flag enables the feature. otherwise
+ *  its counterpart is called.
+ *
+ *  cbreak/raw:
+ *  cbreak means that the input is buffered until a \\n is input.
+ *  by default all input is not buffered.
+ *  echo/noecho:
+ *  echo means that input is also output onto the terminal.
+ *  by default this is off
+ *  keypad:
+ *  allows for keypad, arrow, and other input to be read.
+ *  by default this is off
+ */
 enum struct initOptions : uint32_t {
-  NOTHING = 0,
-  RAW = 1,
-  NOECHO = 1 << 1,
-  KEYPAD = 1 << 2
+  nothing = 0,
+  cbreak = 1,
+  echo = 1 << 1,
+  keypad = 1 << 2,
+  nocolor = 1 << 3
 };
 MTX_BITFLAG_OPS_MACRO(initOptions, uint32_t);
+/**
+ *  @brief a bitflag enum for attributes
+ *  I'm not sure if this is how it's supposed to work,
+ *  although by all indications it is. In any case, it
+ *  can also hold @ref ncxx::color_pair
+ */
 enum charAttributes : chtype {
   normal = A_NORMAL,
   standout = A_STANDOUT,
@@ -31,47 +59,86 @@ enum charAttributes : chtype {
 };
 MTX_BITFLAG_OPS_MACRO(charAttributes, chtype)
 enum struct colors {
-  BLACK = COLOR_BLACK,
-  RED = COLOR_RED,
-  GREEN = COLOR_GREEN,
-  YELLOW = COLOR_YELLOW,
-  BLUE = COLOR_BLUE,
-  CYAN = COLOR_CYAN,
-  MAGENTA = COLOR_MAGENTA,
-  WHITE = COLOR_WHITE
+  black = COLOR_BLACK,
+  red = COLOR_RED,
+  green = COLOR_GREEN,
+  yellow = COLOR_YELLOW,
+  blue = COLOR_BLUE,
+  cyan = COLOR_CYAN,
+  magenta = COLOR_MAGENTA,
+  white = COLOR_WHITE
 };
 
 using color = colors;
+struct attributeOut;
+class window;
+/**
+ *  @brief a wrapper for color pairs.
+ *  this also casts to @ref ncxx::charAttributes
+ */
 class color_pair {
   static int counter;
   int identity;
   using fore = color;
   using back = color;
-  template<typename charType>
   friend class window;
   color_pair(int identity) : identity(identity){};
 
 public:
-  color_pair(color fore, color back) : identity(counter) {
+  /**
+   *  @brief failbit for this class
+   *  if true, then the constructor has failed.
+   *  only appears if NCXX_NO_EXCEPTION is defined
+   */
+#ifdef NCXX_NO_EXCEPTIONS
+  static bool failed;
+#endif
+  /**
+   *  @brief constructor for color_pair
+   *  this really just wraps init_pair.
+   */
+  color_pair(color fore, color back) : identity(counter) NCXX_EXCEPT {
+
     if (COLOR_PAIRS <= counter)
+#ifndef NCXX_NO_EXCEPTIONS
       throw std::logic_error("too many color pairs constructed.");
+#else
+      failed = true;
+#endif
     auto result =
         init_pair(counter, static_cast<short>(fore), static_cast<short>(back));
-    counter++;
+    if (result != OK)
+#ifndef NCXX_NO_EXCEPTIONS
+      throw std::runtime_error("init_pair() failed");
+#else
+      failed = true;
+#endif
+    else
+      counter++;
   }
   color_pair(const color_pair &) = default;
   ~color_pair() { counter--; }
+  /**
+   *  @brief retrieves the colors of the foreground and background.
+   *  @return a pair with foreground as first, and background as second.
+   */
   std::pair<fore, back> content() {
     color fore, back;
     pair_content(identity, reinterpret_cast<short *>(&fore),
                  reinterpret_cast<short *>(&back));
     return {fore, back};
   }
-  int _getIdentity() { return identity; }
+  /**
+   *  @brief allows implicit casting to charAttributes.
+   */
   operator charAttributes() {
     return static_cast<charAttributes>(COLOR_PAIR(identity));
   }
+  inline int &_identityHandle() noexcept { return identity; }
 };
+#ifdef NCXX_NO_EXCEPTIONS
+inline bool color_pair::failed{};
+#endif
 inline int color_pair::counter = 1;
 struct attributeOut {
   color_pair p;

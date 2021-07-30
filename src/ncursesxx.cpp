@@ -1,29 +1,29 @@
-#include "ncursesxx.hpp"
-#include "macros.hpp"
+#include <curses.h>
 #include <stdexcept>
+
+#include "ncursesxx.hpp"
+
 using namespace ncxx;
 
-#if (NCXX_COLOR != NCXX_COLOR_ALWAYS)
-#define EXCEPT noexcept
-#else
-#define EXCEPT
-#endif
 namespace {
-WINDOW *initcurses(initOptions options, int delay) EXCEPT {
+WINDOW *initcurses(initOptions options, int delay) NCXX_EXCEPT {
   auto local = setlocale(LC_CTYPE, "");
   initscr(); /* Start curses mode 		*/
-  if ((options & initOptions::RAW) != initOptions::NOTHING)
-    raw(); /* Line buffering disabled	*/
-  if ((options & initOptions::KEYPAD) != initOptions::NOTHING)
+  if ((options & initOptions::cbreak) != initOptions::nothing)
+    cbreak(); /* Line buffering disabled	*/
+  else
+   raw();
+  if ((options & initOptions::keypad) != initOptions::nothing)
     keypad(stdscr, TRUE); /* We get F1, F2 etc..		*/
-  if ((options & initOptions::NOECHO) != initOptions::NOTHING)
-    noecho();
+  if ((options & initOptions::echo) != initOptions::nothing)
+    echo();
+  else
+   noecho();
   if (delay)
     halfdelay(delay);
-#if (NCXX_COLOR != NCXX_COLOR_NEVER)
-  auto result = start_color();
-#endif
-#if (NCXX_COLOR == NCXX_COLOR_ALWAYS)
+  if((options & initOptions::nocolor) == initOptions::nothing)
+    auto result = start_color();
+#ifdef NCXX_NO_EXCEPTIONS
   if (result != OK)
     throw std::runtime_error("Color is not available from terminal");
 #endif
